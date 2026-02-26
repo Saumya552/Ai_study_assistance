@@ -3,10 +3,10 @@ import { useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 
 const StarfieldBackground = ({
-    starCount = 800,
-    shootingStarRate = 0.02, // probability per frame
-    twinkleSpeed = 0.005,
-    parallaxFactor = 0.02,
+    starCount = 400,
+    shootingStarRate = 0.01, // probability per frame
+    twinkleSpeed = 0.002,
+    parallaxFactor = 0.01,
     baseColor = "#ffffff",
     nebulaColors = ["#0f172a", "#1e1b4b", "#2e1065", "#4c1d95"],
 }) => {

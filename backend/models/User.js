@@ -9,6 +9,25 @@ const userSchema = new mongoose.Schema({
     githubId: { type: String },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     subscriptionStatus: { type: String, enum: ["free", "basic", "pro"], default: "free" },
+
+    // 2FA Fields
+    twoFactorSecret: { type: String },
+    isTwoFactorEnabled: { type: Boolean, default: false },
+
+    // Profile Fields
+    specialization: { type: String },
+    bio: { type: String },
+    location: { type: String },
+    phone: { type: String },
+
+    // Settings
+    settings: {
+        emailNotifications: { type: Boolean, default: true },
+        pushNotifications: { type: Boolean, default: true },
+        aiFeaturesEnabled: { type: Boolean, default: true },
+        debugModeEnabled: { type: Boolean, default: false }
+    },
+
     createdAt: { type: Date, default: Date.now }
 });
 

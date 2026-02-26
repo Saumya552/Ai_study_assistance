@@ -41,7 +41,7 @@ function Landing() {
                         <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
                             <FiShield size={20} className="text-white" />
                         </div>
-                        <h1 className="text-xl font-bold tracking-tight">Antigravity <span className="text-cyan-400">OS</span></h1>
+                        <h1 className="text-xl font-bold tracking-tight">AI Study <span className="text-cyan-400">Assistant</span></h1>
                     </div>
                     <div className="flex items-center gap-6">
                         <button onClick={() => navigate("/pricing")} className="隐藏 md:block text-sm font-medium hover:text-cyan-400 transition flex items-center gap-2">
@@ -66,7 +66,7 @@ function Landing() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="px-4 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-xs font-semibold tracking-wide uppercase"
                     >
-                        Future of Intelligent Learning
+                        Intelligent Study Companion
                     </motion.div>
 
                     <motion.h2
@@ -75,8 +75,8 @@ function Landing() {
                         transition={{ delay: 0.2 }}
                         className="text-6xl md:text-8xl font-extrabold leading-tight tracking-tight"
                     >
-                        Master Anything with <br />
-                        <span className="premium-gradient-text">Neural Precision.</span>
+                        Master Your Studies with <br />
+                        <span className="premium-gradient-text">Smart AI Guidance.</span>
                     </motion.h2>
 
                     <motion.p
@@ -117,20 +117,20 @@ function Landing() {
                 {/* Features Section */}
                 <div className="grid lg:grid-cols-3 gap-8 mb-40">
                     <FeatureCard
-                        title="Neural Notes"
-                        desc="Auto-synthesize knowledge into interconnected nodes using advanced LLMs."
+                        title="Smart Notes"
+                        desc="Automatically organize and summarize your study materials using AI."
                         icon={<FiZap size={28} />}
                         delay={0.5}
                     />
                     <FeatureCard
-                        title="Deep Analytics"
-                        desc="Visualize your cognitive growth with predictive performance vectors."
+                        title="Study Insights"
+                        desc="Track your progress and identify areas for improvement with detailed analytics."
                         icon={<FiTarget size={28} />}
                         delay={0.6}
                     />
                     <FeatureCard
-                        title="Smart Vault"
-                        desc="Secure, encrypted storage for your entire academic history, accessible anywhere."
+                        title="Secure Storage"
+                        desc="Keep all your academic resources safe and accessible in one place."
                         icon={<FiBox size={28} />}
                         delay={0.7}
                     />
@@ -139,9 +139,9 @@ function Landing() {
                 {/* Footer Section */}
                 <div className="flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm border-t border-white/5 pt-12 gap-8 mb-12">
                     <div className="flex items-center gap-4">
-                        <span className="font-bold text-slate-300">ANTIGRAVITY OS</span>
+                        <span className="font-bold text-slate-300">AI STUDY ASSISTANT</span>
                         <span className="opacity-20">|</span>
-                        <span>v0.9.1 PRE-RELEASE</span>
+                        <span>v1.0.0</span>
                     </div>
                     <div className="flex items-center gap-8">
                         <span className="hover:text-cyan-400 cursor-pointer transition">Privacy</span>

@@ -13,7 +13,7 @@ app.use(express.json());
 
 // ✅ Proper CORS setup (use only once)
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", "https://ai-study-assistance.vercel.app"],
+    origin: ["http://localhost:3000", "http://localhost:5173", "https://ai-study-assistance.vercel.app", process.env.FRONTEND_URL],
     credentials: true
 }));
 
@@ -22,7 +22,11 @@ app.use(session({
     secret: process.env.JWT_SECRET || "fallback-session-secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 1 day
+    cookie: {
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    } // 1 day
 }));
 
 // ✅ Initialize Passport

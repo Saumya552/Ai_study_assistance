@@ -10,9 +10,9 @@ import API_BASE_URL from '../config/api';
 
 // Maps display name → backend plan name & price
 const PLAN_MAP = {
-    Scholar: { backendPlan: 'Free', price: 0, priceDisplay: 'Free' },
-    Genius: { backendPlan: 'Pro', price: 999, priceDisplay: '₹999' },
-    Master: { backendPlan: 'Enterprise', price: 2999, priceDisplay: '₹2,999' },
+    Basic: { backendPlan: 'Free', price: 0, priceDisplay: 'Free' },
+    Pro: { backendPlan: 'Pro', price: 999, priceDisplay: '₹999' },
+    Enterprise: { backendPlan: 'Enterprise', price: 2999, priceDisplay: '₹2,999' },
 };
 
 const PAYMENT_METHODS = [
@@ -63,7 +63,7 @@ const PricingCard = ({ title, priceDisplay, features, icon: Icon, recommended, d
 );
 
 // ─── Payment Modal ─────────────────────────────────────────────────────────────
-const PaymentModal = ({ plan, onClose, onPay, status, isProcessing }) => {
+const PaymentModal = ({ plan, onClose, onPay, status, isProcessing, qrCode }) => {
     if (!plan) return null;
     const { backendPlan, priceDisplay } = PLAN_MAP[plan];
 
@@ -155,14 +155,34 @@ const PaymentModal = ({ plan, onClose, onPay, status, isProcessing }) => {
                             ))}
                         </div>
 
-                        {status === 'processing' && (
+                        {qrCode && status === 'processing' && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="mt-8 p-6 bg-white rounded-3xl flex flex-col items-center gap-4 shadow-inner border border-slate-200"
+                            >
+                                <img src={qrCode} alt="PhonePe QR" className="w-48 h-48" />
+                                <div className="text-center">
+                                    <p className="text-slate-900 font-black text-sm uppercase tracking-wider">Scan with PhonePe</p>
+                                    <p className="text-slate-500 text-[10px] font-bold mt-1">Pay with any UPI app to activate plan</p>
+                                </div>
+                                <button
+                                    onClick={() => onPay('verify')}
+                                    className="w-full py-3 bg-purple-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-purple-600/30"
+                                >
+                                    I have completed payment
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {status === 'processing' && !qrCode && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 className="mt-6 flex items-center justify-center gap-3 text-cyan-400 font-bold text-sm"
                             >
                                 <FaSpinner className="animate-spin" />
-                                Processing secure transaction...
+                                Preparing secure checkout...
                             </motion.div>
                         )}
 
@@ -183,9 +203,11 @@ const Pricing = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState(null);
+    const [activeQrCode, setActiveQrCode] = useState(null);
+    const [transactionId, setTransactionId] = useState(null);
 
     const handlePlanSelect = (planTitle) => {
-        if (planTitle === 'Scholar') {
+        if (planTitle === 'Basic') {
             // Free plan — just redirect
             if (!localStorage.getItem('token')) {
                 navigate('/register');
@@ -200,9 +222,7 @@ const Pricing = () => {
     };
 
     const handlePayment = async (method) => {
-        setIsProcessing(true);
-        setPaymentStatus('processing');
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
             navigate('/login');
             return;
@@ -210,34 +230,45 @@ const Pricing = () => {
 
         const { backendPlan, price } = PLAN_MAP[selectedPlan];
 
+        if (method === 'verify') {
+            setIsProcessing(true);
+            try {
+                await axios.post(
+                    `${API_BASE_URL}/subscription/verify-payment`,
+                    { transactionId, plan: backendPlan, amount: price },
+                    { headers: { Authorization: token } }
+                );
+                setPaymentStatus('success');
+                setTimeout(() => navigate('/dashboard'), 3000);
+            } catch (err) {
+                setPaymentStatus('error');
+            } finally {
+                setIsProcessing(false);
+            }
+            return;
+        }
+
+        setIsProcessing(true);
+        setPaymentStatus('processing');
+        setShowPaymentModal(true);
+
         try {
-            // 1. Initiate Payment
             const initRes = await axios.post(
                 `${API_BASE_URL}/subscription/initiate-payment`,
-                { plan: backendPlan, method },
+                { plan: backendPlan, amount: price, method },
                 { headers: { Authorization: token } }
             );
 
-            // 2. Simulate 2-second payment gateway interaction
-            console.log('[Payment] Gateway URL:', initRes.data.paymentUrl);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // 3. Verify + activate subscription
-            await axios.post(
-                `${API_BASE_URL}/subscription/verify-payment`,
-                {
-                    transactionId: initRes.data.transactionId,
-                    plan: backendPlan,
-                    amount: price,
-                    method
-                },
-                { headers: { Authorization: token } }
-            );
-
-            setPaymentStatus('success');
-            setTimeout(() => navigate('/dashboard'), 3000);
+            if (initRes.data.qrCodeUrl) {
+                setActiveQrCode(initRes.data.qrCodeUrl);
+                setTransactionId(initRes.data.orderId);
+            } else {
+                // Simulate legacy card/netbanking verification
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                setPaymentStatus('success');
+                setTimeout(() => navigate('/dashboard'), 3000);
+            }
         } catch (err) {
-            console.error('[Payment] Error:', err);
             setPaymentStatus('error');
         } finally {
             setIsProcessing(false);
@@ -246,45 +277,45 @@ const Pricing = () => {
 
     const plans = [
         {
-            title: 'Scholar',
+            title: 'Basic',
             priceDisplay: 'Free',
             icon: FaStar,
             features: [
-                '10 AI Generations/month',
-                'Basic Study Tools',
-                '50 MB Cloud Storage',
+                '10 AI Study Guides/month',
+                'Core Study Tools',
+                '50 MB Storage',
                 'Community Support',
-                'Standard Analytics',
+                'Standard Progress Tracking',
             ],
             recommended: false,
             delay: 0.2,
         },
         {
-            title: 'Genius',
+            title: 'Pro',
             priceDisplay: '₹999',
             icon: FaCrown,
             features: [
-                '100 AI Generations/month',
-                'AI-Powered Insights',
-                '500 MB Cloud Storage',
+                '100 AI Study Guides/month',
+                'Smart Insights',
+                '500 MB Storage',
                 'Priority Support',
-                'Advanced Analytics',
-                'Custom Study Plans',
+                'Detailed Analytics',
+                'Custom Study Paths',
             ],
             recommended: true,
             delay: 0.4,
         },
         {
-            title: 'Master',
+            title: 'Enterprise',
             priceDisplay: '₹2,999',
             icon: FaRocket,
             features: [
-                '1000 AI Generations/month',
-                'Team Collaboration',
-                '5 GB Cloud Storage',
+                '1000 AI Study Guides/month',
+                'Collaboration Tools',
+                '5 GB Storage',
                 'Dedicated Support',
                 'Full API Access',
-                'Early Beta Access',
+                'Early Access to Features',
             ],
             recommended: false,
             delay: 0.6,
@@ -326,10 +357,11 @@ const Pricing = () => {
                     {showPaymentModal && (
                         <PaymentModal
                             plan={selectedPlan}
-                            onClose={() => { setShowPaymentModal(false); setPaymentStatus(null); }}
+                            onClose={() => { setShowPaymentModal(false); setPaymentStatus(null); setActiveQrCode(null); }}
                             onPay={handlePayment}
                             status={paymentStatus}
                             isProcessing={isProcessing}
+                            qrCode={activeQrCode}
                         />
                     )}
                 </AnimatePresence>

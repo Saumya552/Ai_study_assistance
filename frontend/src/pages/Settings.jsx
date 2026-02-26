@@ -39,10 +39,14 @@ const Settings = () => {
     const [message, setMessage] = useState({ type: "", text: "" });
 
     const [passwords, setPasswords] = useState({
-        currentPassword: "",
+        oldPassword: "",
         newPassword: "",
         confirmPassword: ""
     });
+
+    const [twoFAStep, setTwoFAStep] = useState('none'); // none, setup, verify
+    const [qrCode, setQrCode] = useState("");
+    const [twoFAToken, setTwoFAToken] = useState("");
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -69,7 +73,7 @@ const Settings = () => {
             await axios.put(`${API_BASE_URL}/user/profile`, user, {
                 headers: { Authorization: token }
             });
-            setMessage({ type: "success", text: "Neural configuration synced successfully." });
+            setMessage({ type: "success", text: "Settings saved successfully." });
         } catch (err) {
             setMessage({ type: "error", text: "Sync failed. Error in data transmission." });
         } finally {
@@ -102,17 +106,57 @@ const Settings = () => {
         try {
             const token = localStorage.getItem("token");
             await axios.put(`${API_BASE_URL}/user/update-password`, {
-                currentPassword: passwords.currentPassword,
+                oldPassword: passwords.oldPassword,
                 newPassword: passwords.newPassword
             }, {
                 headers: { Authorization: token }
             });
             setMessage({ type: "success", text: "Password updated successfully" });
-            setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+            setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
         } catch (err) {
             setMessage({ type: "error", text: err.response?.data?.message || "Password update failed" });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleEnable2FA = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.post(`${API_BASE_URL}/user/2fa/generate`, {}, {
+                headers: { Authorization: token }
+            });
+            setQrCode(res.data.qrCodeUrl);
+            setTwoFAStep('setup');
+        } catch (err) {
+            console.error("Failed to generate 2FA:", err);
+        }
+    };
+
+    const handleVerify2FA = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(`${API_BASE_URL}/user/2fa/verify`, { token: twoFAToken }, {
+                headers: { Authorization: token }
+            });
+            setUser(prev => ({ ...prev, isTwoFactorEnabled: true }));
+            setTwoFAStep('none');
+            setMessage({ type: "success", text: "2FA enabled successfully" });
+        } catch (err) {
+            setMessage({ type: "error", text: "Invalid 2FA token" });
+        }
+    };
+
+    const handleDisable2FA = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(`${API_BASE_URL}/user/2fa/disable`, {}, {
+                headers: { Authorization: token }
+            });
+            setUser(prev => ({ ...prev, isTwoFactorEnabled: false }));
+            setMessage({ type: "success", text: "2FA disabled successfully" });
+        } catch (err) {
+            console.error("Failed to disable 2FA:", err);
         }
     };
 
@@ -136,10 +180,10 @@ const Settings = () => {
     const tabs = [
         { id: 'profile', icon: FiUser, label: 'Profile' },
         { id: 'security', icon: FiShield, label: 'Security' },
-        { id: 'notifications', icon: FiBell, label: 'Alerts' },
-        { id: 'api', icon: FiCode, label: 'Developer' },
+        { id: 'notifications', icon: FiBell, label: 'Notifications' },
+        { id: 'api', icon: FiCode, label: 'Developer API' },
         { id: 'billing', icon: FiCreditCard, label: 'Subscription' },
-        { id: 'advanced', icon: FiCpu, label: 'System' },
+        { id: 'advanced', icon: FiCpu, label: 'Advanced' },
     ];
 
     const handleCopy = (key) => {
@@ -161,13 +205,13 @@ const Settings = () => {
                         <div>
                             <h1 className="text-5xl font-black bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent flex items-center gap-4">
                                 <FiSettings size={40} className="text-indigo-600" />
-                                Core Configuration
+                                Account Settings
                             </h1>
-                            <p className="text-[var(--text-secondary)] mt-3 font-bold uppercase tracking-widest text-xs opacity-60">System Preferences & Preference Nodes</p>
+                            <p className="text-[var(--text-secondary)] mt-3 font-bold uppercase tracking-widest text-xs opacity-60">Manage your profile and preferences</p>
                         </div>
                         <div className="px-6 py-3 bg-[var(--bg-secondary)] backdrop-blur-md rounded-2xl border border-[var(--border-color)] shadow-xl flex items-center gap-3">
                             <FiMoon className="text-indigo-500" />
-                            <span className="text-xs font-black uppercase tracking-widest">Adaptive Dark Mode active</span>
+                            <span className="text-xs font-black uppercase tracking-widest">Dark Mode active</span>
                         </div>
                     </div>
 
@@ -197,10 +241,10 @@ const Settings = () => {
 
                             <div className="mt-8 p-6 bg-gradient-to-br from-indigo-600/10 to-purple-600/10 rounded-[32px] border border-indigo-500/20 shadow-xl">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2 flex items-center gap-2">
-                                    <FiZap /> System Pro-Tip
+                                    <FiZap /> Quick Tip
                                 </h4>
                                 <p className="text-xs font-bold leading-relaxed opacity-70">
-                                    Use 'Cmd + S' across the platform to quickly sync knowledge nodes to your AI repository.
+                                    Use 'Cmd + S' across the platform to quickly save your changes to the cloud.
                                 </p>
                             </div>
                         </aside>
@@ -241,7 +285,7 @@ const Settings = () => {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Identity Vector (Email)</label>
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Email Address</label>
                                                     <input
                                                         type="email"
                                                         value={user.email}
@@ -259,17 +303,35 @@ const Settings = () => {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Timezone / Sync</label>
-                                                    <select
-                                                        value={user.timezone}
-                                                        onChange={(e) => setUser({ ...user, timezone: e.target.value })}
-                                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl px-6 py-4 font-bold text-sm appearance-none outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-inner"
-                                                    >
-                                                        <option>Pacific Standard (PST)</option>
-                                                        <option>Eastern Standard (EST)</option>
-                                                        <option>Central European (CET)</option>
-                                                    </select>
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Location</label>
+                                                    <input
+                                                        type="text"
+                                                        value={user.location || ""}
+                                                        onChange={(e) => setUser({ ...user, location: e.target.value })}
+                                                        placeholder="e.g. San Francisco, CA"
+                                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-inner"
+                                                    />
                                                 </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Phone Number</label>
+                                                    <input
+                                                        type="text"
+                                                        value={user.phone || ""}
+                                                        onChange={(e) => setUser({ ...user, phone: e.target.value })}
+                                                        placeholder="+1 (555) 000-0000"
+                                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-inner"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] px-1">Bio</label>
+                                                <textarea
+                                                    value={user.bio || ""}
+                                                    onChange={(e) => setUser({ ...user, bio: e.target.value })}
+                                                    placeholder="Tell us about yourself..."
+                                                    rows={4}
+                                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-inner resize-none"
+                                                />
                                             </div>
 
                                             {message.text && (
@@ -284,7 +346,7 @@ const Settings = () => {
                                                     disabled={saving}
                                                     className="px-10 py-4 bg-indigo-600 text-white rounded-[20px] font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/30 active:scale-95 transition-transform disabled:opacity-50"
                                                 >
-                                                    {saving ? "Syncing..." : "Sync Profile Changes"}
+                                                    {saving ? "Saving..." : "Save Profile Changes"}
                                                 </button>
                                             </div>
                                         </div>
@@ -300,8 +362,8 @@ const Settings = () => {
                                                         <input
                                                             type="password"
                                                             placeholder="Current Password"
-                                                            value={passwords.currentPassword}
-                                                            onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                                                            value={passwords.oldPassword}
+                                                            onChange={(e) => setPasswords({ ...passwords, oldPassword: e.target.value })}
                                                             className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                                                             required
                                                         />
@@ -337,16 +399,49 @@ const Settings = () => {
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-3">
                                                             <FiShield className="text-indigo-600" size={24} />
-                                                            <h3 className="text-lg font-black uppercase tracking-widest">Two-Factor Protocol</h3>
+                                                            <h3 className="text-lg font-black uppercase tracking-widest">Two-Factor Authentication</h3>
                                                         </div>
                                                         <p className="text-sm font-bold text-[var(--text-secondary)] mt-3 max-w-md">Multi-layered security using hardware keys or biometric authenticator apps.</p>
                                                     </div>
-                                                    <Toggle checked={user.twoFactorEnabled} onChange={(val) => handleUpdateSettings({ twoFactorEnabled: val })} />
+                                                    <Toggle checked={user.isTwoFactorEnabled} onChange={(val) => val ? handleEnable2FA() : handleDisable2FA()} />
                                                 </div>
-                                                {user.twoFactorEnabled && (
+                                                {twoFAStep === 'setup' && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        className="mt-8 p-6 bg-[var(--bg-secondary)] rounded-3xl border border-[var(--border-color)] overflow-hidden"
+                                                    >
+                                                        <div className="flex flex-col md:flex-row gap-8 items-center">
+                                                            <div className="bg-white p-4 rounded-xl shadow-xl">
+                                                                <img src={qrCode} alt="2FA QR Code" className="w-40 h-40" />
+                                                            </div>
+                                                            <div className="flex-1 space-y-4">
+                                                                <p className="text-xs font-bold opacity-60">Scan this QR code with your authenticator app (like Google Authenticator or Authy).</p>
+                                                                <div className="flex gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Verification Code"
+                                                                        value={twoFAToken}
+                                                                        onChange={(e) => setTwoFAToken(e.target.value)}
+                                                                        className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                                                                    />
+                                                                    <button
+                                                                        onClick={handleVerify2FA}
+                                                                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg"
+                                                                    >
+                                                                        Verify
+                                                                    </button>
+                                                                </div>
+                                                                <button onClick={() => setTwoFAStep('none')} className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:underline">Cancel Setup</button>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                                {user.isTwoFactorEnabled && (
                                                     <div className="mt-8 flex gap-4">
-                                                        <button className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Configure TOTP</button>
-                                                        <button className="px-6 py-3 bg-white/10 dark:bg-white/5 border border-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest">Emergency Recovery</button>
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
+                                                            <FiCheck /> 2FA is active on your account
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
@@ -373,8 +468,8 @@ const Settings = () => {
                                     {activeTab === 'notifications' && (
                                         <div className="space-y-6">
                                             {[
-                                                { label: "Neural Update Alerts", desc: "Weekly AI intelligence reports and synthesis summaries.", state: user.emailNotifications, field: 'emailNotifications' },
-                                                { label: "Push Propagation", desc: "Direct system alerts for critical study milestones.", state: user.pushNotifications, field: 'pushNotifications' },
+                                                { label: "Email Notifications", desc: "Receive weekly study reports and account updates.", state: user.emailNotifications, field: 'emailNotifications' },
+                                                { label: "Push Notifications", desc: "Direct alerts for study milestones and reminders.", state: user.pushNotifications, field: 'pushNotifications' },
                                             ].map((item, i) => (
                                                 <div key={i} className="flex items-center justify-between p-8 bg-[var(--bg-primary)] rounded-[32px] border border-[var(--border-color)]">
                                                     <div>
@@ -403,8 +498,8 @@ const Settings = () => {
                                         <div className="space-y-10">
                                             <div className="flex justify-between items-center mb-6">
                                                 <div>
-                                                    <h3 className="text-xl font-black uppercase tracking-widest">Developer Access</h3>
-                                                    <p className="text-sm font-bold text-[var(--text-secondary)] mt-1 opacity-60">Manage your neural interface API keys.</p>
+                                                    <h3 className="text-xl font-black uppercase tracking-widest">Developer Settings</h3>
+                                                    <p className="text-sm font-bold text-[var(--text-secondary)] mt-1 opacity-60">Manage your API keys for custom integrations.</p>
                                                 </div>
                                                 <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">
                                                     <FiPlus /> Generate New Key
@@ -463,7 +558,7 @@ const Settings = () => {
                                                             <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest">Current Plan</span>
                                                             <h3 className="text-4xl font-black mt-4">{user.subscription?.plan || "Free"} Plan</h3>
                                                             <p className="text-sm font-bold opacity-80 mt-2">
-                                                                {user.subscription?.plan === 'Free' ? 'Standard Features' : 'Neural Augmented Access'}
+                                                                {user.subscription?.plan === 'Free' ? 'Standard Access' : 'Full AI Access'}
                                                             </p>
                                                         </div>
                                                         <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -487,7 +582,7 @@ const Settings = () => {
                                             </div>
 
                                             <div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-6">Payment Infrastructure</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-6">Payment Details</h4>
                                                 <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-[32px] flex justify-between items-center">
                                                     <div className="flex items-center gap-6">
                                                         <div className="w-12 h-12 bg-[var(--bg-secondary)] rounded-2xl flex items-center justify-center border border-[var(--border-color)]">
@@ -503,7 +598,7 @@ const Settings = () => {
                                             </div>
 
                                             <div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-6">Archived Manifests (Invoices)</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-6">Billing History</h4>
                                                 <div className="space-y-3">
                                                     {[1, 2, 3].map(i => (
                                                         <div key={i} className="flex items-center justify-between p-6 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-3xl hover:border-indigo-500/20 transition group">
@@ -530,9 +625,9 @@ const Settings = () => {
                                                     <FiShield size={28} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-xl font-black uppercase tracking-widest text-amber-500">System Integrity Protocols</h3>
+                                                    <h3 className="text-xl font-black uppercase tracking-widest text-amber-500">Advanced System Settings</h3>
                                                     <p className="text-sm font-bold opacity-60 mt-2 leading-relaxed">
-                                                        Modifying these parameters may affect the synchronization accuracy and latency of your neural repository. Proceed with system-level clearance.
+                                                        Modifying these settings may affect how your account data is handled. Proceed with caution.
                                                     </p>
                                                 </div>
                                             </div>
@@ -540,36 +635,36 @@ const Settings = () => {
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between p-8 bg-[var(--bg-primary)] rounded-[32px] border border-[var(--border-color)]">
                                                     <div>
-                                                        <h3 className="text-sm font-black uppercase tracking-widest">Neural Beta Access</h3>
-                                                        <p className="text-[10px] font-bold opacity-50 mt-1">Receive early access to experimental AI synthesis models.</p>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest">Beta Features</h3>
+                                                        <p className="text-[10px] font-bold opacity-50 mt-1">Get early access to experimental AI study tools.</p>
                                                     </div>
                                                     <Toggle checked={user.aiFeaturesEnabled} onChange={(val) => handleUpdateSettings({ aiFeaturesEnabled: val })} />
                                                 </div>
 
                                                 <div className="flex items-center justify-between p-8 bg-[var(--bg-primary)] rounded-[32px] border border-[var(--border-color)]">
                                                     <div>
-                                                        <h3 className="text-sm font-black uppercase tracking-widest">Developer Debug Logic</h3>
-                                                        <p className="text-[10px] font-bold opacity-50 mt-1">Expose underlying neural telemetry for advanced troubleshooting.</p>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest">Debug Mode</h3>
+                                                        <p className="text-[10px] font-bold opacity-50 mt-1">Enable detailed logging for troubleshooting.</p>
                                                     </div>
                                                     <Toggle checked={user.debugModeEnabled} onChange={(val) => handleUpdateSettings({ debugModeEnabled: val })} />
                                                 </div>
                                             </div>
 
                                             <div className="pt-6">
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-6">Critical Operations Area</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-6">Danger Zone</h4>
                                                 <div className="grid md:grid-cols-2 gap-4">
                                                     <button className="flex items-center gap-4 p-6 bg-rose-600/5 border border-rose-500/10 rounded-3xl hover:bg-rose-600/10 transition group">
                                                         <div className="w-10 h-10 bg-rose-600/10 rounded-xl flex items-center justify-center text-rose-500">
                                                             <FiDatabase />
                                                         </div>
-                                                        <span className="text-xs font-black uppercase tracking-widest text-rose-500">Clear Logic Cache</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest text-rose-500">Clear Storage Cache</span>
                                                     </button>
                                                     <button className="flex items-center gap-4 p-6 bg-rose-600/5 border border-rose-500/10 rounded-3xl hover:bg-rose-600/10 transition group text-left">
                                                         <div className="w-10 h-10 bg-rose-600/10 rounded-xl flex items-center justify-center text-rose-500">
                                                             <FiTrash2 />
                                                         </div>
                                                         <div className="flex-1">
-                                                            <span className="text-xs font-black uppercase tracking-widest text-rose-500">Deconstruct Node</span>
+                                                            <span className="text-xs font-black uppercase tracking-widest text-rose-500">Delete Account</span>
                                                             <p className="text-[10px] opacity-40 italic mt-0.5">Permanent account deletion</p>
                                                         </div>
                                                     </button>
@@ -586,9 +681,9 @@ const Settings = () => {
                 {/* Footer Status */}
                 <div className="max-w-7xl mx-auto px-6 mt-12 pb-12 opacity-40 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
                     <div className="flex items-center gap-4">
-                        <span>© 2026 ANTIGRAVITY OS</span>
+                        <span>© 2026 AI STUDY ASSISTANT</span>
                         <span className="w-1 h-3 bg-indigo-500/30" />
-                        <span>Build 0.8.4.2-ALPHA</span>
+                        <span>v1.0.0</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <FiCheck className="text-indigo-500" />

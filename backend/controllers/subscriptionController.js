@@ -43,11 +43,36 @@ exports.cancelSubscription = async (req, res) => {
 };
 
 exports.initiatePayment = async (req, res) => {
-    // Simulated payment initiation
-    res.json({ orderId: "order_" + Date.now(), amount: 999 });
+    const { plan, amount } = req.body;
+    // Real-world logic would involve calling PhonePe API here
+    // For this demonstration, we return a mock QR code URL
+    const mockQrCode = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=phonepe://pay?pa=ai.study@upi%26pn=AI%20Study%20Assistant%26am=" + amount;
+
+    res.json({
+        orderId: "order_" + Date.now(),
+        amount,
+        plan,
+        qrCodeUrl: mockQrCode,
+        message: "Scan with PhonePe to complete payment"
+    });
 };
 
 exports.verifyPayment = async (req, res) => {
-    // Simulated payment verification
-    res.json({ message: "Payment verified successfully" });
+    const { plan, userId } = req.body;
+    const targetUserId = userId || req.user.id;
+    try {
+        let subscription = await Subscription.findOne({ userId: targetUserId });
+        if (subscription) {
+            subscription.plan = plan;
+            subscription.status = "active";
+            await subscription.save();
+        } else {
+            subscription = new Subscription({ userId: targetUserId, plan, status: "active" });
+            await subscription.save();
+        }
+        await User.findByIdAndUpdate(targetUserId, { subscriptionStatus: plan });
+        res.json({ message: "Payment verified and subscription activated successfully", plan });
+    } catch (err) {
+        res.status(500).json({ message: "Error activating subscription" });
+    }
 };

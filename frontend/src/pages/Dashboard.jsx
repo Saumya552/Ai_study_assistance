@@ -439,7 +439,7 @@ export default function Dashboard() {
         return (
             <MainLayout>
                 <div className="flex items-center justify-center min-h-screen bg-[var(--bg-primary)]">
-                    <div className="text-2xl font-bold animate-pulse text-indigo-500">Loading Intelligence...</div>
+                    <div className="text-2xl font-bold animate-pulse text-indigo-500">Loading Dashboard...</div>
                 </div>
             </MainLayout>
         );
@@ -462,7 +462,7 @@ export default function Dashboard() {
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div>
                             <h1 className="text-4xl md:text-5xl font-black premium-gradient-text">
-                                Welcome back, {userData?.name || "Scholar"}
+                                Welcome back, {userData?.name || "Student"}
                             </h1>
                             <p className="text-[var(--text-secondary)] mt-2 font-bold flex items-center gap-2">
                                 <span>📅</span> {typedDate}
@@ -484,15 +484,15 @@ export default function Dashboard() {
                             <motion.div key="dashboard" initial="hidden" animate="visible" exit={{ opacity: 0, y: 20 }} variants={containerVariants}>
                                 {/* KPI Section */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                                    <TiltCard><StatCardContent title="Total Notes" value={stats.totalNotes} icon="📝" trend="+3 this week" trendUp /></TiltCard>
-                                    <TiltCard><StatCardContent title="AI Generated" value={stats.aiGeneratedNotes} icon="🤖" trend={`${Math.round((stats.aiGeneratedNotes / (stats.totalNotes || 1)) * 100)}% of total`} trendUp /></TiltCard>
-                                    <TiltCard><StatCardContent title="Study Hours" value={Math.floor(estimatedTotalHours) + "h"} icon="⏱️" trend="+12% total" trendUp /></TiltCard>
-                                    <TiltCard><StatCardContent title="Streak" value={stats.streak + " Days"} icon="🔥" trend="Best: 12" trendUp /></TiltCard>
+                                    <TiltCard><StatCardContent title="Study Notes" value={stats.totalNotes} icon="📝" trend="+3 this week" trendUp /></TiltCard>
+                                    <TiltCard><StatCardContent title="AI Assisted" value={stats.aiGeneratedNotes} icon="🤖" trend={`${Math.round((stats.aiGeneratedNotes / (stats.totalNotes || 1)) * 100)}% of total`} trendUp /></TiltCard>
+                                    <TiltCard><StatCardContent title="Study Time" value={Math.floor(estimatedTotalHours) + "h"} icon="⏱️" trend="+12% total" trendUp /></TiltCard>
+                                    <TiltCard><StatCardContent title="Day Streak" value={stats.streak + " Days"} icon="🔥" trend="Best: 12" trendUp /></TiltCard>
                                 </div>
 
                                 {/* Charts & Analytics */}
                                 <div className="grid lg:grid-cols-3 gap-8 mb-10">
-                                    <GlassCard title="Learning Momentum" className="lg:col-span-2">
+                                    <GlassCard title="Study Momentum" className="lg:col-span-2">
                                         <div className="h-72 mt-4">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <AreaChart data={weeklyStats}>
@@ -541,9 +541,9 @@ export default function Dashboard() {
 
                                 {/* Progress Rings */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-                                    <AnimatedProgressRing percent={Math.min(100, (stats.totalNotes * 5))} label="Overall Progress" color="#6366f1" />
-                                    <AnimatedProgressRing percent={Math.min(100, (stats.aiGeneratedNotes * 10))} label="AI Adoption" color="#8b5cf6" />
-                                    <AnimatedProgressRing percent={Math.min(100, (stats.streak * 20))} label="Consistency" color="#ec4899" />
+                                    <AnimatedProgressRing percent={Math.min(100, (stats.totalNotes * 5))} label="Study Progress" color="#6366f1" />
+                                    <AnimatedProgressRing percent={Math.min(100, (stats.aiGeneratedNotes * 10))} label="AI Tools Used" color="#8b5cf6" />
+                                    <AnimatedProgressRing percent={Math.min(100, (stats.streak * 20))} label="Learning Consistency" color="#ec4899" />
                                 </div>
 
                                 {/* Bottom Row */}

@@ -17,6 +17,7 @@ import {
 // Advanced components
 import HeatmapCalendar from "../components/HeatmapCalendar";
 import StarfieldBackground from "../components/StarfieldBackground";
+import API_BASE_URL from "../config/api";
 
 // --- Data ---
 const weeklyData = [
@@ -348,28 +349,28 @@ export default function Dashboard() {
                 const headers = { Authorization: `Bearer ${token}` };
 
                 // Fetch User Profile
-                const profileRes = await fetch("http://localhost:5000/api/users/profile", { headers });
+                const profileRes = await fetch(`${API_BASE_URL}/users/profile`, { headers });
                 if (profileRes.ok) {
                     const profileData = await profileRes.json();
                     setUserData(profileData);
                 }
 
                 // Fetch Analytics
-                const analyticsRes = await fetch("http://localhost:5000/api/analytics", { headers });
+                const analyticsRes = await fetch(`${API_BASE_URL}/analytics`, { headers });
                 if (analyticsRes.ok) {
                     const analyticsData = await analyticsRes.json();
                     setStats(analyticsData);
                 }
 
                 // Fetch Weekly Stats
-                const weeklyRes = await fetch("http://localhost:5000/api/analytics/weekly", { headers });
+                const weeklyRes = await fetch(`${API_BASE_URL}/analytics/weekly`, { headers });
                 if (weeklyRes.ok) {
                     const weeklyData = await weeklyRes.json();
                     setWeeklyStats(weeklyData);
                 }
 
                 // Fetch Recent Notes
-                const notesRes = await fetch("http://localhost:5000/api/study?limit=4&sort=latest", { headers });
+                const notesRes = await fetch(`${API_BASE_URL}/study?limit=4&sort=latest`, { headers });
                 if (notesRes.ok) {
                     const notesData = await notesRes.json();
                     setNotes(notesData);

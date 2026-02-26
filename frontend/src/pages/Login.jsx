@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
-import API_BASE_URL from "../config/api";
+import { API_BASE_URL, BASE_URL } from "../config/api";
 import StarfieldBackground from "../components/StarfieldBackground";
 import InputField from "../components/InputField";
 import PasswordField from "../components/PasswordField";
@@ -12,7 +12,7 @@ import BiometricButton from "../components/BiometricButton";
 import { FaGoogle, FaGithub } from "react-icons/fa";
 import { FiArrowRight, FiShield } from "react-icons/fi";
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = BASE_URL;
 
 function Login() {
     const navigate = useNavigate();

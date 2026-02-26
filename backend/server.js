@@ -13,7 +13,7 @@ app.use(express.json());
 
 // ✅ Proper CORS setup (use only once)
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:5173", "https://ai-study-assistance.vercel.app"],
     credentials: true
 }));
 
@@ -29,7 +29,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Test route
+// Health check and Test route
+app.get("/", (req, res) => {
+    res.send("AI Study Assistance API is running...");
+});
+
 app.post("/test", (req, res) => {
     res.send("Test route working");
 });

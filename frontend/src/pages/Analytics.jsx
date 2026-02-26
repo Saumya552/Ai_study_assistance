@@ -29,6 +29,7 @@ import {
 } from "react-icons/fi";
 import { FaBrain, FaChartLine, FaRocket, FaStar } from "react-icons/fa";
 import StarfieldBackground from "../components/StarfieldBackground";
+import API_BASE_URL from "../config/api";
 
 function CustomTooltip({ active, payload, label }) {
     if (active && payload && payload.length) {
@@ -61,8 +62,8 @@ function Analytics() {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [analyticsRes, weeklyRes] = await Promise.all([
-                fetch("http://localhost:5000/api/analytics", { headers }),
-                fetch("http://localhost:5000/api/analytics/weekly", { headers })
+                fetch(`${API_BASE_URL}/analytics`, { headers }),
+                fetch(`${API_BASE_URL}/analytics/weekly`, { headers })
             ]);
 
             if (analyticsRes.ok) setStats(await analyticsRes.json());

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
+import API_BASE_URL from "../config/api";
+
 function MainLayout({ children }) {
     const [user, setUser] = useState(null);
 
@@ -9,7 +11,7 @@ function MainLayout({ children }) {
         const fetchUser = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const res = await fetch("http://localhost:5000/api/users/profile", {
+                const res = await fetch(`${API_BASE_URL}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res.ok) {
